@@ -521,6 +521,7 @@ class StreamProcessor(proc_base.BaseProcessor):
         self._tool_buffer = ""
         self._tool_partial = ""
         self._tool_calls_seen = False
+        self._agent_think_pending = False
 
     def _filter_tool_card(self, token: str) -> str:
         if not token or not self.tool_usage_enabled:
@@ -541,6 +542,8 @@ class StreamProcessor(proc_base.BaseProcessor):
                 self._tool_usage_buffer += rest[:end_pos]
                 line = extract_tool_text(self._tool_usage_buffer, self.rollout_id)
                 if line:
+                    if "[AgentThink]" in line:
+                        self._agent_think_pending = True
                     if output_parts and not output_parts[-1].endswith("\n"):
                         output_parts[-1] += "\n"
                     output_parts.append(f"{line}\n")
@@ -567,6 +570,8 @@ class StreamProcessor(proc_base.BaseProcessor):
             raw_card = rest[start_idx:end_pos]
             line = extract_tool_text(raw_card, self.rollout_id)
             if line:
+                if "[AgentThink]" in line:
+                    self._agent_think_pending = True
                 if output_parts and not output_parts[-1].endswith("\n"):
                     output_parts[-1] += "\n"
                 output_parts.append(f"{line}\n")
@@ -796,6 +801,9 @@ class StreamProcessor(proc_base.BaseProcessor):
                     if not filtered:
                         continue
                     in_think = is_thinking or self.image_think_active
+                    if self._agent_think_pending:
+                        in_think = True
+                        self._agent_think_pending = False
                     if in_think:
                         if not self.show_think:
                             continue

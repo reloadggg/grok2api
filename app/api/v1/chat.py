@@ -27,7 +27,7 @@ class MessageItem(BaseModel):
     """消息项"""
 
     role: str
-    content: Optional[Union[str, Dict[str, Any], List[Dict[str, Any]]]]
+    content: Optional[Union[str, Dict[str, Any], List[Dict[str, Any]]]] = None
     tool_calls: Optional[List[Dict[str, Any]]] = None
     tool_call_id: Optional[str] = None
     name: Optional[str] = None
